@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use dash_llvm_jit_backend::backend::CompiledFunction;
 use dash_llvm_jit_backend::backend::JitFunction;
@@ -54,22 +55,29 @@ impl Frontend {
     }
 }
 
-pub fn compile_current_trace(vm: &mut Vm) -> Result<(Trace, JitFunction), Error> {
+pub fn compile_current_trace(vm: &mut Vm) -> Result<(Rc<Trace>, JitFunction), Error> {
     let frame = vm.frames.last().unwrap();
     let trace = vm.jit.take_recording_trace().unwrap();
     let bytecode = &frame.function.buffer[trace.start()..trace.end()];
     let origin = trace.origin();
 
     if let Some(cached) = vm.jit.get_cached_function(origin, trace.start()) {
-        return Ok((trace, cached.compiled()));
+        return Ok((Rc::clone(cached.trace()), cached.compiled()));
     }
 
-    let types = infer_types_and_labels(bytecode, QueryProvider::new(vm, &trace))?;
+    let trace = Rc::new(trace);
 
-    let fun = vm
-        .jit
-        .backend
-        .compile_trace(QueryProvider::new(vm, &trace), bytecode, types, &trace)?;
+    let types = infer_types_and_labels(bytecode, QueryProvider::new(vm, Rc::clone(&trace)))?;
+
+    dbg!(&types.local_tys);
+    panic!();
+
+    let fun = vm.jit.backend.compile_trace(
+        QueryProvider::new(vm, Rc::clone(&trace)),
+        bytecode,
+        types,
+        Rc::clone(&trace),
+    )?;
 
     let compiled = fun.compiled();
 

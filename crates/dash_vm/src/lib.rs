@@ -1020,14 +1020,6 @@ impl Vm {
     pub(crate) fn poison_ip(&mut self, ip: usize) {
         self.frames.last().unwrap().function.poison_ip(ip);
     }
-
-    // TODO: move these to DispatchContext.
-    #[cfg(feature = "jit")]
-    pub(crate) fn record_conditional_jump(&mut self, did_jump: bool) {
-        if let Some(trace) = self.jit.recording_trace_mut() {
-            trace.record_conditional_jump(did_jump);
-        }
-    }
 }
 
 pub enum PromiseAction {

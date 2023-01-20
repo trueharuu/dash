@@ -38,7 +38,7 @@ impl Type {
 pub trait InferQueryProvider {
     fn type_of_local(&self, index: u16) -> Option<Type>;
     fn type_of_constant(&self, index: u16) -> Option<Type>;
-    fn did_take_nth_branch(&self, nth: usize) -> bool;
+    fn did_take_jump_at(&self, ip: usize) -> bool;
 }
 
 struct DecodeContext<'a> {
@@ -129,7 +129,6 @@ pub struct InferResult {
 pub fn infer_types_and_labels<Q: InferQueryProvider>(bytecode: &[u8], query: Q) -> Result<InferResult, InferError> {
     let mut iter = bytecode.iter();
     let mut cx = DecodeContext::new(bytecode);
-    let mut branch_count = 0;
 
     while let Some((index, instr)) = cx.next_instruction() {
         match instr {
@@ -224,17 +223,16 @@ pub fn infer_types_and_labels<Q: InferQueryProvider>(bytecode: &[u8], query: Q) 
             Instruction::JmpFalseP | Instruction::JmpNullishP | Instruction::JmpTrueP | Instruction::JmpUndefinedP => {
                 let _ = cx.pop();
                 let count = cx.next_wide_signed();
-                let target_ip = index as i16 + count + 3;
+                let next_ip = index + 3;
+                let target_ip = next_ip as i16 + count;
 
-                if query.did_take_nth_branch(branch_count) {
+                if query.did_take_jump_at(index + 3) {
                     for _ in 0..count {
                         cx.next_byte();
                     }
 
                     cx.set_label_at(target_ip as usize);
                 }
-
-                branch_count += 1;
             }
             Instruction::IntrinsicOp => {
                 let op = IntrinsicOperation::from_repr(cx.next_byte()).unwrap();

@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::rc::Weak;
 
 use dash_middle::compiler::constant::Constant;
 use dash_middle::compiler::constant::Function;
@@ -7,39 +9,38 @@ use indexmap::IndexMap;
 
 #[derive(Debug)]
 pub struct Trace {
-    /// The "parent" instruction pointer
+    /// The "parent" trace
     ///
-    /// This is `Some` if this trace records a side exit and will contain the instruction pointer
-    /// of the predecessor trace
-    pub(crate) parent_ip: Option<usize>,
+    /// This is `Some` if this trace records a side exit and will contain a
+    /// strong reference to the predecessor trace
+    pub(crate) parent: Option<Weak<Trace>>,
+    /// The "successor" traces
+    pub(crate) successors: HashMap<usize, Rc<Trace>>,
     pub(crate) origin: *const Function,
     pub(crate) start: usize,
     pub(crate) end: usize,
-    /// A vector of conditional jumps, i.e. diverging control flow.
-    /// The index is the # of the jump and the bool represents whether the jump is taken.
-    ///
-    /// Note for later: can change to HashSet<usize, bool> where usize is the IP if a trace
-    /// is composed of multiple possible paths
-    pub(crate) conditional_jumps: Vec<bool>,
+    /// A map that maps instruction pointer of conditional jumps to whether that jump was taken
+    pub(crate) conditional_jumps: HashMap<usize, bool>,
 }
 
 impl Trace {
-    pub fn new(origin: *const Function, start: usize, end: usize, parent_ip: Option<usize>) -> Self {
+    pub fn new(origin: *const Function, start: usize, end: usize, parent: Option<Weak<Trace>>) -> Self {
         Self {
-            parent_ip,
+            parent,
+            successors: HashMap::new(),
             origin,
             start,
             end,
-            conditional_jumps: Vec::new(),
+            conditional_jumps: HashMap::new(),
         }
     }
 
-    pub fn get_conditional_jump(&self, id: usize) -> bool {
-        self.conditional_jumps[id]
+    pub fn did_take_jump_at(&self, ip: usize) -> bool {
+        self.conditional_jumps[&ip]
     }
 
-    pub fn record_conditional_jump(&mut self, taken: bool) {
-        self.conditional_jumps.push(taken);
+    pub fn record_conditional_jump_at(&mut self, ip: usize, taken: bool) {
+        self.conditional_jumps.insert(ip, taken);
     }
 
     pub fn start(&self) -> usize {
@@ -52,5 +53,9 @@ impl Trace {
 
     pub fn origin(&self) -> *const Function {
         self.origin
+    }
+
+    pub fn parent(&self) -> Option<&Weak<Trace>> {
+        self.parent.as_ref()
     }
 }

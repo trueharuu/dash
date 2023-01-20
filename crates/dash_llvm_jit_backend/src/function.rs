@@ -665,23 +665,24 @@ impl Function {
                     cx.build_br(target_block);
                 }
                 Instruction::JmpFalseP => {
-                    let count = cx.next_wide() as i16;
-                    let next_ip = index as isize + 3;
-                    let jump_target_ip = (index as isize + count as isize) + 3;
-                    let value = cx.pop();
-                    let did_take = trace.conditional_jumps[jumps];
-                    if did_take {
-                        for i in 0..count {
-                            cx.next_byte();
-                        }
-                    }
-                    jumps += 1;
-                    cx.emit_guard(
-                        value,
-                        !did_take,
-                        next_ip.try_into().unwrap(),
-                        jump_target_ip.try_into().unwrap(),
-                    );
+                    todo!();
+                    // let count = cx.next_wide() as i16;
+                    // let next_ip = index as isize + 3;
+                    // let jump_target_ip = (index as isize + count as isize) + 3;
+                    // let value = cx.pop();
+                    // let did_take = trace.conditional_jumps[jumps];
+                    // if did_take {
+                    //     for i in 0..count {
+                    //         cx.next_byte();
+                    //     }
+                    // }
+                    // jumps += 1;
+                    // cx.emit_guard(
+                    //     value,
+                    //     !did_take,
+                    //     next_ip.try_into().unwrap(),
+                    //     jump_target_ip.try_into().unwrap(),
+                    // );
                 }
                 Instruction::Ne | Instruction::StrictNe => cx.with2(|cx, a, b| cx.build_ne(a, b)),
                 Instruction::Eq | Instruction::StrictEq => cx.with2(|cx, a, b| cx.build_eq(a, b)),

@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::ffi::CStr;
 use std::fmt::Debug;
 use std::ptr;
+use std::rc::Rc;
 
 use dash_middle::compiler::instruction::Instruction;
 use llvm_sys::analysis::LLVMVerifierFailureAction;
@@ -61,7 +62,7 @@ impl Backend {
         q: Q,
         bytecode: &[u8],
         infer: InferResult,
-        trace: &Trace,
+        trace: Rc<Trace>,
     ) -> Result<CompiledFunction, CompileError> {
         let mut fun = Function::new();
         fun.compile_setup(&infer.local_tys);
@@ -74,17 +75,22 @@ impl Backend {
         fun.run_pass_manager();
 
         let compiled = fun.compile();
-        Ok(CompiledFunction { inner: fun, compiled })
+        Ok(CompiledFunction { fun, compiled, trace })
     }
 }
 
 pub struct CompiledFunction {
-    inner: Function,
+    fun: Function,
     compiled: JitFunction,
+    trace: Rc<Trace>,
 }
 
 impl CompiledFunction {
     pub fn compiled(&self) -> JitFunction {
         self.compiled
+    }
+
+    pub fn trace(&self) -> &Rc<Trace> {
+        &self.trace
     }
 }

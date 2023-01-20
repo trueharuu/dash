@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use dash_llvm_jit_backend::function::CompileQuery;
 use dash_llvm_jit_backend::function::JITConstant;
 use dash_llvm_jit_backend::passes::infer::InferQueryProvider;
@@ -12,11 +14,11 @@ use crate::Vm;
 
 pub struct QueryProvider<'a> {
     vm: &'a Vm,
-    trace: &'a Trace,
+    trace: Rc<Trace>,
 }
 
 impl<'a> QueryProvider<'a> {
-    pub fn new(vm: &'a Vm, trace: &'a Trace) -> Self {
+    pub fn new(vm: &'a Vm, trace: Rc<Trace>) -> Self {
         Self { vm, trace }
     }
 }
@@ -49,8 +51,9 @@ impl<'a> InferQueryProvider for QueryProvider<'a> {
             _ => None,
         }
     }
-    fn did_take_nth_branch(&self, nth: usize) -> bool {
-        self.trace.get_conditional_jump(nth)
+    fn did_take_jump_at(&self, ip: usize) -> bool {
+        let target_ip = self.trace.start() + ip;
+        self.trace.did_take_jump_at(target_ip)
     }
 }
 

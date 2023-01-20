@@ -136,6 +136,14 @@ impl<'a> DispatchContext<'a> {
             .as_number()
             .expect("Bytecode attempted to reference invalid number constant")
     }
+
+    #[cfg(feature = "jit")]
+    pub(crate) fn record_conditional_jump(&mut self, did_jump: bool) {
+        let ip = self.active_frame().ip;
+        if let Some(trace) = self.jit.recording_trace_mut() {
+            trace.record_conditional_jump_at(ip, did_jump);
+        }
+    }
 }
 
 impl<'a> Deref for DispatchContext<'a> {

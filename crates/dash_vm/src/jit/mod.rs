@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::rc::Weak;
 
 mod frontend;
 mod query;
@@ -36,6 +37,16 @@ fn handle_loop_trace(vm: &mut Vm, jmp_instr_ip: usize) {
 
     // `target_ip` is not the "real" IP, there may be some extra instructions before the loop header
     vm.frames.last_mut().unwrap().ip = target_ip as usize;
+
+    let is_loop_exit = target_ip as usize == trace.end();
+    // TODO
+    // If side exit (!is_loop_exit), call handle_loop_counter_inc
+    // and handle side exit traces down in `handle_loop_end`. It should
+    // compile the side exit trace by merging it with the parent trace.
+    if !is_loop_exit {
+        let parent = Rc::downgrade(&trace);
+        handle_loop_counter_inc(vm, trace.end(), Some(parent));
+    }
 }
 
 pub fn handle_loop_end(vm: &mut Vm, loop_end_ip: usize) {
@@ -54,7 +65,7 @@ pub fn handle_loop_end(vm: &mut Vm, loop_end_ip: usize) {
     }
 }
 
-fn handle_loop_counter_inc(vm: &mut Vm, loop_end_ip: usize, parent_ip: Option<usize>) {
+fn handle_loop_counter_inc(vm: &mut Vm, loop_end_ip: usize, parent: Option<Weak<Trace>>) {
     let frame = vm.frames.last_mut().unwrap();
     let origin = Rc::as_ptr(&frame.function);
     let counter = frame.loop_counter.get_or_insert(frame.ip);
@@ -72,7 +83,7 @@ fn handle_loop_counter_inc(vm: &mut Vm, loop_end_ip: usize, parent_ip: Option<us
         // The trace will go on until either:
         // - The loop is exited
         // - The iteration has ended (i.e. we are here again)
-        let trace = Trace::new(origin, frame.ip, loop_end_ip, parent_ip);
+        let trace = Trace::new(origin, frame.ip, loop_end_ip, parent);
         vm.jit.set_recording_trace(trace);
     }
 }
