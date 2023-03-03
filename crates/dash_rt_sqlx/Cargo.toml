@@ -1,0 +1,14 @@
+[package]
+name = "dash_rt_sqlx"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dash_rt = { path = "../dash_rt" }
+dash_vm = { path = "../dash_vm" }
+dash_middle = { path = "../dash_middle" }
+tokio = { version = "1.24.0", features = ["full"] }
+hyper = { version = "0.14.18", features = ["server", "tcp", "http1"] }
+rusqlite = "0.28.0"

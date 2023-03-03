@@ -13,3 +13,4 @@ dash_rt_fetch = { path = "../dash_rt_fetch" }
 dash_rt_script_modules = { path = "../dash_rt_script_modules" }
 dash_rt_timers = { path = "../dash_rt_timers" }
 dash_dlloader = { path = "../dash_dlloader" }
+dash_rt_sqlx = { path = "../dash_rt_sqlx" }

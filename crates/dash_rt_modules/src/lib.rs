@@ -6,6 +6,7 @@ pub fn init_modules() -> Box<dyn ModuleLoader> {
         .or(dash_rt_fetch::FetchModule)
         .or(dash_rt_timers::TimersModule::new())
         .or(dash_dlloader::DllModule::new())
+        .or(dash_rt_sqlx::SqlxModule)
         .or(dash_rt_script_modules::ScriptModule::new());
 
     Box::new(module)
